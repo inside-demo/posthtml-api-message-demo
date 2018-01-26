@@ -1,71 +1,83 @@
 process.js  
 ```js
+"use strict";
 import {readFileSync, writeFileSync} from 'fs';
 import posthtml from 'posthtml';
 
+var arr1;
+var arr2;
+
 [{
-	from: 'templates/index.html',
-	to: 'dist/output-index.html'
+  from: 'templates/index.html',
+  to: 'dist/output-index.html'
 }, {
-	from: 'templates/layout.html',
-	to: 'dist/output-layout.html'
+  from: 'templates/layout.html',
+  to: 'dist/output-layout.html'
 }].forEach(options => {
-	const html = readFileSync(options.from, 'utf8');
-	const plugins = [
-		(function (options) {
-		  return function (tree) {
+  const html = readFileSync(options.from, 'utf8');
+  const plugins = [
+    function (tree) {
+      tree.messages.push({
+        type: 'dependency',
+        file: 'path/to/dependency.html',
+        from: tree.options.from
+      })
 
-			tree.messages.push({
-				type: 'dependency',
-				file: 'path/to/dependency.html',
-				from: tree.options.from
-			})
+      return tree;
+    }
+  ]
+  const result = posthtml(plugins)
+    .use(function (tree) {
+      tree.messages.push({
+        type: 'dependency',
+        file: 'path/to/dependency.html',
+        from: 'use'
+      })
 
-			console.log(tree);
-
-			return tree;
-		  }
-		})()
-	]
-	posthtml(plugins)
-		.process(html, options)
-		.then(result => {
-			writeFileSync(options.to, result.html);
-		});
+      return tree;
+    })
+    .process(html, options)
+    .then(result => {
+      console.log(result.tree);
+      writeFileSync(options.to, result.html);
+    });
 })
 ```
 
 result loop #1
 ```js
-[ '<!DOCTYPE html>',
-  '\n',
-  { tag: 'html',
-    attrs: { lang: 'en' },
-    content: [ '\n', [Object], '\n', [Object], '\n' ] },
+[ 'index',
   options: { from: 'templates/index.html', to: 'dist/output-index.html' },
-  processor: PostHTML { version: '0.11.1', name: 'posthtml', plugins: [ [Function] ] },
-  walk: [Function: walk],
-  match: [Function: match],
-  messages: [ { type: 'dependency',
-      file: 'path/to/dependency.html',
-      from: 'templates/index.html' } ] ]
-```
-
-result loop #2
-```js
-[ '<!DOCTYPE html>',
-  '\n',
-  { tag: 'html',
-    attrs: { lang: 'en' },
-    content: [ '\n', [Object], '\n', [Object], '\n' ] },
-  options: { from: 'templates/layout.html', to: 'dist/output-layout.html' },
-  processor: PostHTML { version: '0.11.1', name: 'posthtml', plugins: [ [Function] ] },
-  walk: [Function: walk],
-  match: [Function: match],
+  processor: PostHTML {
+    version: '0.11.3',
+    name: 'posthtml',
+    plugins: [ [Function], [Function] ] },
+  walk: [Function],
+  match: [Function],
   messages: [ { type: 'dependency',
       file: 'path/to/dependency.html',
       from: 'templates/index.html' },
     { type: 'dependency',
       file: 'path/to/dependency.html',
-      from: 'templates/layout.html' } ] ]
+      from: 'use' } ],
+  extendApi: true ]
+```
+
+result loop #2
+```js
+[ 'layout',
+  options: { from: 'templates/layout.html', to: 'dist/output-layout.html' },
+  processor: PostHTML {
+    version: '0.11.3',
+    name: 'posthtml',
+    plugins: [ [Function], [Function] ] },
+  walk: [Function],
+  match: [Function],
+  messages: [ { type: 'dependency',
+      file: 'path/to/dependency.html',
+      from: 'templates/layout.html' },
+    { type: 'dependency',
+      file: 'path/to/dependency.html',
+      from: 'use' } ],
+  extendApi: true ]
 ```

@@ -1,5 +1,9 @@
+"use strict";
 import {readFileSync, writeFileSync} from 'fs';
 import posthtml from 'posthtml';
+
+var arr1;
+var arr2;
 
 [{
 	from: 'templates/index.html',
@@ -10,24 +14,29 @@ import posthtml from 'posthtml';
 }].forEach(options => {
 	const html = readFileSync(options.from, 'utf8');
 	const plugins = [
-		(function (options) {
-		  return function (tree) {
-
+		function (tree) {
 			tree.messages.push({
 				type: 'dependency',
 				file: 'path/to/dependency.html',
 				from: tree.options.from
 			})
 
-			console.log(tree);
+			return tree;
+		}
+	]
+	const result = posthtml(plugins)
+		.use(function (tree) {
+			tree.messages.push({
+				type: 'dependency',
+				file: 'path/to/dependency.html',
+				from: 'use'
+			})
 
 			return tree;
-		  }
-		})()
-	]
-	posthtml(plugins)
+		})
 		.process(html, options)
 		.then(result => {
+			console.log(result.tree);
 			writeFileSync(options.to, result.html);
 		});
 })
