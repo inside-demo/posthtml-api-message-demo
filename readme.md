@@ -4,9 +4,6 @@ process.js
 import {readFileSync, writeFileSync} from 'fs';
 import posthtml from 'posthtml';
 
-var arr1;
-var arr2;
-
 [{
   from: 'templates/index.html',
   to: 'dist/output-index.html'
